@@ -23,7 +23,7 @@ treehieght :: Tree a -> Int
 treehieght (Leaf _) = 0
 treehieght (Node l r) = 1 + ((treehieght l) `max` (treehieght r))
 --treehieght tree1 --gives 2
-
+ 
 --          .
 --         / \
 --        .   Bogale
