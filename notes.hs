@@ -523,3 +523,257 @@ summer' = fodlr (+) 0 --pattially applying foldlr
         -- skip :: (Eq p, Num p) => p -> p 
 
 
+
+
+
+
+
+
+
+-------- /*  LESSON EIGHT  */ ----------
+
+
+----------------NON PARAMETRIZED TYPES-------------
+
+-- instead of using somethig like
+--generateTx :: String -> String -> Int -> String
+--using 
+--generateTx :; Address -> Address -> value -> Id 
+--by using type synonyms to assign a name to the signature , THIS IS NOT CREATING NEW TYPE
+
+--type Name = String
+--type Address  = (String, Int)
+--type Person = (Name, Address) --setting a person type is a tuple of name and add
+
+--nate = ("Nathan Bogale", ("Addis Abeba",555)) :: Person --tellign that nate is of a person type
+
+-- *Main> :t nate
+-- nate :: Person
+
+
+
+-----------TO CREATE NEW TYPES USE DATA
+-- data Color = REd | Green | Blue   --both type name and value constructos must start with UPPERCASE 
+
+type Name = String
+type Address  = (String, Int)
+
+data PaymentMethod = Cash | Card | Check
+
+type Person = (Name, Address, PaymentMethod)
+
+nate = ("Nathan Bogale",("Addis", 2254586), Card) :: Person
+
+--TERMINAL
+-- *Main> nate
+-- ("Nathan Bogale",("Addis",2254586))
+
+--using patern matching
+paysWith :: Person -> String 
+paysWith (_, _, Cash) = "PAYS WITH CASH"
+paysWith (_, _, Card) = "PAYS WITH CASRD"
+paysWith (_, _, Check) = "PAYS WITH CHECK"
+
+-- TERMINAL
+-- *Main> paysWith nate
+-- "PAYS WITH CASRD"
+
+
+
+
+--------------VALUE PARAMETERS
+
+data Shape = Circle Float | Rectangle Float Float --rectangle is a funcion taking 2 floats as inpt, and gives a value of type shape
+rect1 = Rectangle 2 4
+circ1 = Circle 5
+
+-- *Main> :t rect1
+-- rect1 :: Shape
+
+area::Shape -> Float
+area (Circle r) = pi * r * 2
+area (Rectangle l1 l2) = l1 * l2
+
+-- *Main> area rect1
+-- 8.0
+-- *Main> area circ1
+-- 31.415928
+
+
+
+
+-----------RECORD SYNTAX --alternative of definin datatpes
+--withoutrecord syntax
+-- data Employee = Employee String Float
+--With
+data Employee = Employee {name::String, expirence:: Float} deriving (Show) --assingin it to the show data type, can be seen in console
+
+nathan = Employee {name="Nathan Boglae", expirence=15.5}  --another way below
+bogale = Employee "Bogale" 8
+
+-- *Main> bogale
+-- Employee {name = "Bogale", expirence = 8.0}
+
+
+team = [Employee "One" 5, Employee "Two" 10, Employee "Three" 4.5]
+combinedExp :: [Employee] -> Float
+combinedExp = foldr (\e acc -> expirence e + acc ) 0
+
+-- *Main> combinedExp team
+-- 19.5
+
+
+
+
+
+
+
+-------- /*  LESSON NINE  */ ----------
+
+
+----------------CREATING PARAMETEIZED RECURSIVE TYPES-------------
+
+type Name1 = String
+type Address1 = (String, Int)
+type CompanyId = Int
+
+--by creating a parametrized type constructor
+
+type Entity a = (a, Address1,CompanyId)
+
+nate1 = ("Nathan Bogale", ("Addis", 555), 123) :: Entity Name1
+office1 = (123, ("addis", 555),123) :: Entity CompanyId
+
+-- *Main> office1
+-- (123,("addis",555),123)
+
+
+
+
+
+------------- parametrising data type
+
+data Box a = Empty | Has a deriving (Show)
+
+-- box = Has (1 :: Int)  --here box already has 1
+
+addN :: Num a => Box a -> Box a -> Box a --takign 2 boxed as an input and returning one as output
+
+addN _ Empty = Empty  --if second box is empty return empty
+addN Empty _ = Empty
+
+addN (Has a) (Has b)= Has (a + b)
+
+
+-- *Main> addN (Has 2) (Has 4)
+-- Has 6
+-- *Main> addN (Has 2) Empty
+-- Empty
+
+extract :: a -> Box a -> a
+extract def Empty = def  --if box is empty return the default !!
+extract _ (Has x) = x
+
+
+-- *Main> extract 0 Empty
+-- 0
+-- *Main> extract 0 (Has 5)
+-- 5
+-- *Main> extract 'a' Empty
+-- 'a'
+-- *Main> extract [] (Has [1,2,3])
+-- [1,2,3]
+
+
+
+
+
+------------------RECURSIVE DATA TYPES
+data Tweet = Tweet {
+    contents :: String,
+    likes :: Int,
+    comments :: [Tweet]   --each comment is another tweet
+}deriving (Show)
+
+
+tweet :: Tweet
+tweet = Tweet "Hey i'm famous!" 5 
+    [
+        Tweet "Me TOO!" 0 [],
+        Tweet "I'm not!" 3 [
+            Tweet "So wahat??" 2 []
+        ]
+    ]
+
+engagement :: Tweet -> Int
+engagement Tweet {likes = l, comments = c} = l + length c + sum (map engagement c)  --patern matching likes and commment and adding likes and amount of comment 
+
+-- *Main> engagement tweet
+-- 13
+
+
+
+
+
+-----------------------BINARY SEARCH TREE
+--each child's of nodes on the left are smaller than the node, while all childern on the right on the node are larger than the node
+
+data Tree a = EmptyT | Node a (Tree a) (Tree a) deriving (Show)  --checking on the left and right of the tree, hhas 2 constructors the empty and the node
+
+emptyTree :: Tree a
+emptyTree = EmptyT
+
+oneLevelTree :: Tree Char
+oneLevelTree = Node 'a' EmptyT EmptyT
+
+twoLevelTree :: Tree Integer
+twoLevelTree = Node 8
+    (Node 3 EmptyT EmptyT)
+    (Node 10 EmptyT EmptyT)
+
+threeLevelTree :: Tree Integer
+threeLevelTree = Node 10
+    (Node 8 
+        (Node 2 EmptyT EmptyT) 
+        EmptyT
+    )
+    (Node 12 
+        EmptyT 
+        (Node 15 EmptyT EmptyT)
+    )
+
+-- *Main> threeLevelTree
+-- Node 10 (Node 8 (Node 2 EmptyT EmptyT) EmptyT) (Node 12 EmptyT (Node 15 EmptyT EmptyT))
+
+--checker, checking if the value is with in the list or tree
+elemTree :: (Ord a) => a -> Tree a -> Bool 
+elemTree v EmptyT = False  -- if empty then false
+elemTree v (Node x left right)
+    | v == x = True
+    | v > x = elemTree v right  --recursively check the right side
+    | v< x = elemTree v left
+
+-- *Main> elemTree 10 threeLevelTree
+-- True
+-- *Main> elemTree 11 threeLevelTree
+-- False
+
+
+
+-- to check the type of a type constructor like Box, dont use :t use :i or info
+
+
+-----------newType, types created with this eneed to have exactly one constructor with exxactly ne parameter/field
+-- newType Color a = Color a
+-- newType Poduct a = Product { getProduct :: a}
+
+
+
+
+
+
+
+
+
+
+
